@@ -100,7 +100,7 @@ async function initFirebase(){
    import('https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js'),
    import('https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js')]);
   const app=initializeApp(firebaseConfig);
-  firebaseAuth=getAuth(app);firebaseGoogleProvider=GoogleAuthProvider;firestore=initializeFirestore(app,{experimentalForceLongPolling:true});cloudDocRef=doc(firestore,...CLOUD_PATH);cloudGetDoc=getDoc;cloudRunTransaction=runTransaction;cloudOnSnapshot=onSnapshot;
+  firebaseAuth=getAuth(app);firebaseGoogleProvider=GoogleAuthProvider;firestore=initializeFirestore(app,{experimentalAutoDetectLongPolling:true});cloudDocRef=doc(firestore,...CLOUD_PATH);cloudGetDoc=getDoc;cloudRunTransaction=runTransaction;cloudOnSnapshot=onSnapshot;
   firebaseSignInWithCredential=signInWithCredential;firebaseSignOut=signOut;
   firebaseStatus('Firebase: ready for sign-in.');
  }catch(err){console.error('Firebase initialization failed',err);firebaseStatus('Firebase unavailable; local White Board remains usable.')}
