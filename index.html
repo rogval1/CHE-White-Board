@@ -36,7 +36,22 @@ function cloudAction(label,fn){let b=cloudButton();if(!b)return;b.style.display=
 function cloudNoAction(){let b=cloudButton();if(b){b.style.display='none';b.onclick=null}}
 function normalizedState(v){return {projects:Array.isArray(v?.projects)?v.projects:[],tasks:Array.isArray(v?.tasks)?v.tasks:[],docs:Array.isArray(v?.docs)?v.docs:[],contacts:Array.isArray(v?.contacts)?v.contacts:[],author:state.author||''}}
 function adoptCloud(data,rev){const email=googleUser?.email||state.author;state=normalizedState(data);state.author=email;cloudRevision=rev;try{localStorage.setItem(KEY,JSON.stringify(state))}catch{}render()}
-function cloudError(err){console.error('Cloud sync error',err);firebaseStatus('Cloud sync paused: '+(err.code||err.message)+'. Local browser copy remains available.');cloudReady=false}
+async function diagnoseCloudRead(originalError){
+ console.warn('Firestore SDK read failed; testing authenticated REST read (read-only).',originalError);
+ try{
+  const user=firebaseAuth?.currentUser;
+  if(!user)throw Error('No Firebase authenticated user');
+  const token=await user.getIdToken();
+  const url='https://firestore.googleapis.com/v1/projects/'+encodeURIComponent(firebaseConfig.projectId)+'/databases/(default)/documents/'+CLOUD_PATH.map(encodeURIComponent).join('/');
+  const response=await fetch(url,{headers:{Authorization:'Bearer '+token},cache:'no-store'});
+  const body=await response.json().catch(()=>({}));
+  console.info('Firestore REST diagnostic HTTP status:',response.status,'response:',body);
+  if(response.status===404){firebaseStatus('Firestore REST connection works; shared workspace does not exist yet. SDK connection failed. Local data is safe.');return}
+  if(response.ok){firebaseStatus('Firestore REST connection works; SDK connection failed. Local data is safe.');return}
+  firebaseStatus('Firestore REST diagnostic: HTTP '+response.status+' ('+(body.error?.status||'unknown')+'). Local data is safe.');
+ }catch(e){console.error('Firestore REST diagnostic failed',e);firebaseStatus('Firestore SDK and REST connection failed: '+e.message+'. Local data is safe.')}
+}
+function cloudError(err){console.error('Cloud sync error',err);firebaseStatus('Cloud sync paused: '+(err.code||err.message)+'. Checking direct Firestore access…');cloudReady=false;diagnoseCloudRead(err)}
 function queueCloudSave(){cloudWritePromise=cloudWritePromise.then(async()=>{
  if(!cloudReady||cloudConflict||!cloudDirty)return;
  cloudDirty=false;const payload=normalizedState(state), expected=cloudRevision;
