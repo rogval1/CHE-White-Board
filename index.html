@@ -1,8 +1,8 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Center for Housing Economics Project White Board</title><style>
-:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#193449;background:#f4f7f9}*{box-sizing:border-box}body{margin:0}header{background:#12364b;color:white;padding:20px max(20px,calc((100vw - 1080px)/2))}header a{color:#d4e8ef;text-decoration:none}main{max-width:1080px;margin:28px auto;padding:0 18px}h1{font-size:28px;margin:5px 0 12px}h2{font-size:19px;margin:0 0 12px}h3{font-size:16px}p{color:#657886;line-height:1.5}.card{background:white;border:1px solid #dbe5eb;border-radius:13px;padding:20px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.category{cursor:pointer;text-align:left;font:inherit;background:white;border:1px solid #dbe5eb;border-radius:12px;padding:22px}.category:hover{border-color:#15819c}.category strong{display:block;font-size:18px}.muted{font-size:13px;color:#71818e}button,.btn{background:white;border:1px solid #b8cbd5;border-radius:8px;padding:9px 12px;color:#17465c;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}button.primary{background:#11677e;color:white;border-color:#11677e}button:disabled{opacity:.5;cursor:default}input,textarea,select{font:inherit;border:1px solid #b9cbd5;border-radius:8px;padding:10px;width:100%;background:white}textarea{min-height:90px}label{display:block;font-size:13px;font-weight:650;margin:12px 0 5px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{min-width:0}.grow{flex:1}.item{display:flex;align-items:flex-start;gap:12px;border-top:1px solid #e6edf1;padding:13px 0}.item:first-child{border-top:0}.item .grow{flex:1}.link{background:none;border:0;padding:0;color:#0d6886;text-decoration:underline;text-align:left;font:inherit;cursor:pointer}.small{font-size:12px;color:#71818e}.badge{background:#e6f2f5;color:#176076;border-radius:30px;padding:4px 9px;font-size:12px}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.hidden{display:none!important}.notice{background:#fff8e9;padding:12px;border-radius:8px;color:#745a27;font-size:13px}.stack{display:grid;gap:10px}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}a{color:#0d6886}@media(max-width:640px){.grid,.two{grid-template-columns:1fr}header{padding:17px}h1{font-size:24px}.card{padding:15px}}.source-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:13px 0}.source-choice{border:1px solid #d6e3e9;border-radius:9px;padding:10px;display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}.source-choice input{width:auto}.search-result{border-top:1px solid #e6edf1;padding:14px 0}.search-result strong{display:block}.search-note{font-size:12px;color:#607789;margin:6px 0}.search-panel{background:#f5fafc;border:1px solid #d7e8ee;border-radius:10px;padding:14px;margin-top:12px}@media(max-width:640px){.source-grid{grid-template-columns:repeat(2,minmax(0,1fr))}} </style><script src="https://accounts.google.com/gsi/client" async defer></script></head><body><header><div class="toolbar"><strong>Center for Housing Economics<br>Project White Board</strong><div class="row"><a href="#home">Home</a><a href="#library">Document library</a><span id="googleAccount" style="font-size:12px;color:#d4e8ef"></span><button id="googleSignOut" type="button" style="display:none">Sign out</button><span id="googleSignIn"></span></div></div></header><main><div class="notice" style="margin-bottom:12px"><strong>Integration test:</strong> Firebase connection test: Google sign-in will also authenticate with Firebase. Project and task data remain local until we configure and verify the two-user Firestore security rules. Gmail and Drive searches are not connected yet. <span id="firebaseStatus">Firebase: waiting for sign-in.</span></div><div id="app"></div></main><script>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#193449;background:#f4f7f9}*{box-sizing:border-box}body{margin:0}header{background:#12364b;color:white;padding:20px max(20px,calc((100vw - 1080px)/2))}header a{color:#d4e8ef;text-decoration:none}main{max-width:1080px;margin:28px auto;padding:0 18px}h1{font-size:28px;margin:5px 0 12px}h2{font-size:19px;margin:0 0 12px}h3{font-size:16px}p{color:#657886;line-height:1.5}.card{background:white;border:1px solid #dbe5eb;border-radius:13px;padding:20px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.category{cursor:pointer;text-align:left;font:inherit;background:white;border:1px solid #dbe5eb;border-radius:12px;padding:22px}.category:hover{border-color:#15819c}.category strong{display:block;font-size:18px}.muted{font-size:13px;color:#71818e}button,.btn{background:white;border:1px solid #b8cbd5;border-radius:8px;padding:9px 12px;color:#17465c;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}button.primary{background:#11677e;color:white;border-color:#11677e}button:disabled{opacity:.5;cursor:default}input,textarea,select{font:inherit;border:1px solid #b9cbd5;border-radius:8px;padding:10px;width:100%;background:white}textarea{min-height:90px}label{display:block;font-size:13px;font-weight:650;margin:12px 0 5px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{min-width:0}.grow{flex:1}.item{display:flex;align-items:flex-start;gap:12px;border-top:1px solid #e6edf1;padding:13px 0}.item:first-child{border-top:0}.item .grow{flex:1}.link{background:none;border:0;padding:0;color:#0d6886;text-decoration:underline;text-align:left;font:inherit;cursor:pointer}.small{font-size:12px;color:#71818e}.badge{background:#e6f2f5;color:#176076;border-radius:30px;padding:4px 9px;font-size:12px}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.hidden{display:none!important}.notice{background:#fff8e9;padding:12px;border-radius:8px;color:#745a27;font-size:13px}.stack{display:grid;gap:10px}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}a{color:#0d6886}@media(max-width:640px){.grid,.two{grid-template-columns:1fr}header{padding:17px}h1{font-size:24px}.card{padding:15px}}.source-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:13px 0}.source-choice{border:1px solid #d6e3e9;border-radius:9px;padding:10px;display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}.source-choice input{width:auto}.search-result{border-top:1px solid #e6edf1;padding:14px 0}.search-result strong{display:block}.search-note{font-size:12px;color:#607789;margin:6px 0}.search-panel{background:#f5fafc;border:1px solid #d7e8ee;border-radius:10px;padding:14px;margin-top:12px}@media(max-width:640px){.source-grid{grid-template-columns:repeat(2,minmax(0,1fr))}} </style><script src="https://accounts.google.com/gsi/client" async defer></script></head><body><header><div class="toolbar"><strong>Center for Housing Economics<br>Project White Board</strong><div class="row"><a href="#home">Home</a><a href="#library">Document library</a><span id="googleAccount" style="font-size:12px;color:#d4e8ef"></span><button id="googleSignOut" type="button" style="display:none">Sign out</button><span id="googleSignIn"></span></div></div></header><main><div class="notice" style="margin-bottom:12px"><strong>Integration test:</strong> Cloud sync: projects, tasks, contacts, and document references can be shared after you explicitly initialize the workspace. Uploaded document file contents remain in this browser; Gmail and Drive search are not connected yet. <span id="firebaseStatus">Firebase: waiting for sign-in.</span> <button id="cloudAction" type="button" style="display:none;margin-left:8px"></button></div><div id="app"></div></main><script>
 const cats=['Legislation','Project Pipeline','Capital Outlay','Organizational Development'];const KEY='che-white-board-v1';let state;let db;
 const seed={projects:[{id:'p-chama',name:'The Cottages at 161 Chama',category:'Project Pipeline',description:'Recovery and transitional housing',createdBy:'',createdAt:new Date().toISOString()}],tasks:[],docs:[],contacts:[],author:''};
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const id=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);const date=()=>new Date().toISOString();const $=x=>document.getElementById(x);const proj=x=>state.projects.find(p=>p.id===x);const task=x=>state.tasks.find(t=>t.id===x);const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state));return true}catch(err){console.warn('Browser storage unavailable; changes remain in this tab only',err);return false}};const route=x=>{const target="#"+x;if(location.hash===target){render()}else{location.hash=target;render()}window.scrollTo(0,0)};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const id=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);const date=()=>new Date().toISOString();const $=x=>document.getElementById(x);const proj=x=>state.projects.find(p=>p.id===x);const task=x=>state.tasks.find(t=>t.id===x);const save=()=>{let ok=true;try{localStorage.setItem(KEY,JSON.stringify(state))}catch(err){console.warn('Browser storage unavailable',err);ok=false}if(cloudReady&&!cloudConflict){cloudDirty=true;queueCloudSave()}return ok};const route=x=>{const target="#"+x;if(location.hash===target){render()}else{location.hash=target;render()}window.scrollTo(0,0)};
 function openDB(){return new Promise((resolve,reject)=>{let r=indexedDB.open('che-white-board-files-v1',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}function putFile(k,f){return new Promise((resolve,reject)=>{let t=db.transaction('files','readwrite');t.objectStore('files').put(f,k);t.oncomplete=resolve;t.onerror=()=>reject(t.error)})}function getFile(k){return new Promise((resolve,reject)=>{let r=db.transaction('files').objectStore('files').get(k);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
 function heading(title,back){return `<div class="toolbar"><h1>${esc(title)}</h1>${back?`<button data-go="${esc(back)}">← Back</button>`:''}</div>`}
 function taskRow(t){let p=proj(t.projectId);return `<div class="item"><input style="width:auto;margin-top:5px" type="checkbox" data-done="${t.id}" ${t.done?'checked':''} aria-label="Mark task complete"><div class="grow"><button class="link" data-go="task/${t.id}"><strong>${esc(t.title)}</strong></button><div class="small">${esc(p?.name||'No project')} · ${esc(p?.category||'')} ${t.due?'· Due '+esc(t.due):''}${t.done?' · Completed '+esc((t.completedAt||'').slice(0,10)):''}</div></div></div>`}
@@ -28,14 +28,64 @@ if(view==='library'){wireGlobalSearch();let show=()=>{let q=$('docSearch').value
 // an explicit two-user allowlist is enforced by Firestore Security Rules.
 const firebaseConfig={apiKey:"AIzaSyCSzKMuT53SCp8781nWy9FzpLD8nw1GoVA",authDomain:"che-whiteboard.firebaseapp.com",projectId:"che-whiteboard",storageBucket:"che-whiteboard.firebasestorage.app",messagingSenderId:"105419808603",appId:"1:105419808603:web:b46b41001b553dc092847e"};
 let firebaseAuth=null, firebaseSignInWithCredential=null, firebaseGoogleProvider=null, firebaseSignOut=null;
+let firestore=null, cloudDocRef=null, cloudGetDoc=null, cloudSetDoc=null, cloudRunTransaction=null, cloudOnSnapshot=null;
+let cloudReady=false, cloudDirty=false, cloudConflict=false, cloudRevision=0, cloudWritePromise=Promise.resolve(), cloudUnsubscribe=null;
+const CLOUD_PATH=['workspaces','che-white-board'];
+const cloudButton=()=>document.getElementById('cloudAction');
+function cloudAction(label,fn){let b=cloudButton();if(!b)return;b.style.display='inline-block';b.textContent=label;b.onclick=fn}
+function cloudNoAction(){let b=cloudButton();if(b){b.style.display='none';b.onclick=null}}
+function normalizedState(v){return {projects:Array.isArray(v?.projects)?v.projects:[],tasks:Array.isArray(v?.tasks)?v.tasks:[],docs:Array.isArray(v?.docs)?v.docs:[],contacts:Array.isArray(v?.contacts)?v.contacts:[],author:state.author||''}}
+function adoptCloud(data,rev){const email=googleUser?.email||state.author;state=normalizedState(data);state.author=email;cloudRevision=rev;try{localStorage.setItem(KEY,JSON.stringify(state))}catch{}render()}
+function cloudError(err){console.error('Cloud sync error',err);firebaseStatus('Cloud sync paused: '+(err.code||err.message)+'. Local browser copy remains available.');cloudReady=false}
+function queueCloudSave(){cloudWritePromise=cloudWritePromise.then(async()=>{
+ if(!cloudReady||cloudConflict||!cloudDirty)return;
+ cloudDirty=false;const payload=normalizedState(state), expected=cloudRevision;
+ try{
+  const next=await cloudRunTransaction(firestore,async tx=>{
+   const snap=await tx.get(cloudDocRef);const current=snap.exists()?Number(snap.data().revision||0):0;
+   if(!snap.exists()||current!==expected)throw Error('Cloud data changed on another device');
+   tx.set(cloudDocRef,{data:payload,revision:current+1,updatedAt:new Date().toISOString(),updatedBy:googleUser.email});return current+1;
+  });cloudRevision=next;firebaseStatus('Cloud synced as '+googleUser.email+'.');
+ }catch(err){cloudDirty=true;cloudConflict=true;firebaseStatus('Cloud conflict or write error: '+err.message+'. Changes remain in this browser.');cloudAction('Review cloud changes',()=>{if(confirm('This will load the latest shared data. Your unsynced browser edits will remain in local storage only until overwritten. Continue?'))loadCloudWorkspace(true)})}
+ }).catch(cloudError)}
+async function loadCloudWorkspace(force=false){
+ if(!cloudDocRef)return;
+ try{
+  const snap=await cloudGetDoc(cloudDocRef);
+  if(!snap.exists()){
+   cloudReady=false;cloudNoAction();firebaseStatus('Shared workspace is empty. Your browser data is still intact.');
+   if(googleUser?.email==='rogval@gmail.com')cloudAction('Initialize shared workspace',initializeCloudWorkspace);
+   return;
+  }
+  if(cloudDirty&&!force){cloudConflict=true;firebaseStatus('Unsynced local changes detected; cloud data was not loaded.');return}
+  cloudConflict=false;cloudDirty=false;adoptCloud(snap.data().data,Number(snap.data().revision||0));cloudReady=true;cloudNoAction();firebaseStatus('Cloud synced as '+googleUser.email+'.');
+  if(cloudUnsubscribe)cloudUnsubscribe();
+  cloudUnsubscribe=cloudOnSnapshot(cloudDocRef,ss=>{
+   if(!ss.exists()||!cloudReady)return;
+   const rev=Number(ss.data().revision||0);
+   if(rev<=cloudRevision)return;
+   if(cloudDirty){cloudConflict=true;firebaseStatus('Cloud changed while you have unsynced edits. Refresh only after preserving them.');return}
+   adoptCloud(ss.data().data,rev);firebaseStatus('Cloud updated from shared workspace.');
+  },cloudError);
+ }catch(err){cloudError(err)}
+}
+async function initializeCloudWorkspace(){
+ if(!confirm('Initialize the shared workspace using the projects and tasks currently shown in THIS browser? This will make them visible to both authorized accounts.'))return;
+ try{
+  const payload=normalizedState(state);
+  await cloudRunTransaction(firestore,async tx=>{const snap=await tx.get(cloudDocRef);if(snap.exists())throw Error('Workspace already initialized; reload instead');tx.set(cloudDocRef,{data:payload,revision:1,updatedAt:new Date().toISOString(),updatedBy:googleUser.email})});
+  await loadCloudWorkspace();
+ }catch(err){cloudError(err);cloudAction('Load shared workspace',()=>loadCloudWorkspace())}
+}
 function firebaseStatus(message){const e=$('firebaseStatus');if(e)e.textContent=message}
 async function initFirebase(){
  try{
-  const [{initializeApp},{getAuth,GoogleAuthProvider,signInWithCredential,signOut}]=await Promise.all([
+  const [{initializeApp},{getAuth,GoogleAuthProvider,signInWithCredential,signOut},{getFirestore,doc,getDoc,runTransaction,onSnapshot}]=await Promise.all([
    import('https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js'),
-   import('https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js')]);
+   import('https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js'),
+   import('https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js')]);
   const app=initializeApp(firebaseConfig);
-  firebaseAuth=getAuth(app);firebaseGoogleProvider=GoogleAuthProvider;
+  firebaseAuth=getAuth(app);firebaseGoogleProvider=GoogleAuthProvider;firestore=getFirestore(app);cloudDocRef=doc(firestore,...CLOUD_PATH);cloudGetDoc=getDoc;cloudRunTransaction=runTransaction;cloudOnSnapshot=onSnapshot;
   firebaseSignInWithCredential=signInWithCredential;firebaseSignOut=signOut;
   firebaseStatus('Firebase: ready for sign-in.');
  }catch(err){console.error('Firebase initialization failed',err);firebaseStatus('Firebase unavailable; local White Board remains usable.')}
@@ -45,7 +95,7 @@ async function authenticateFirebase(googleIdToken){
  try{
   const credential=firebaseGoogleProvider.credential(googleIdToken);
   const result=await firebaseSignInWithCredential(firebaseAuth,credential);
-  firebaseStatus('Firebase authenticated: '+result.user.email+'. Shared database not yet enabled.');
+  firebaseStatus('Firebase authenticated: '+result.user.email+'. Checking shared workspace…');await loadCloudWorkspace();
  }catch(err){console.error('Firebase sign-in failed',err);firebaseStatus('Firebase sign-in failed: '+(err.code||err.message))}
 }
 const GOOGLE_CLIENT_ID='105419808603-8av4mq2p2rcvrcasn9halaknafn05rp7.apps.googleusercontent.com';
@@ -64,14 +114,14 @@ function onGoogleCredential(response){
   const claims=JSON.parse(atob(payload));
   if(claims.aud!==GOOGLE_CLIENT_ID||!claims.email)throw Error('Unexpected Google identity response');
   googleUser={email:claims.email,name:claims.name||claims.email};
-  state.author=googleUser.email;save();updateGoogleHeader();render();authenticateFirebase(response.credential);
+  state.author=googleUser.email;try{localStorage.setItem(KEY,JSON.stringify(state))}catch{}updateGoogleHeader();render();authenticateFirebase(response.credential);
  }catch(err){console.error(err);alert('Google sign-in could not be completed. Please try again.')}
 }
 function setupGoogleIdentity(){
  if(!window.google?.accounts?.id){setTimeout(setupGoogleIdentity,350);return}
  google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onGoogleCredential,auto_select:false});
  google.accounts.id.renderButton($('googleSignIn'),{theme:'outline',size:'medium',text:'signin_with'});
- $('googleSignOut').onclick=async()=>{google.accounts.id.disableAutoSelect();if(firebaseAuth&&firebaseSignOut)await firebaseSignOut(firebaseAuth);googleUser=null;firebaseStatus('Firebase: signed out.');updateGoogleHeader();render()};
+ $('googleSignOut').onclick=async()=>{if(cloudUnsubscribe){cloudUnsubscribe();cloudUnsubscribe=null}cloudReady=false;cloudNoAction();google.accounts.id.disableAutoSelect();if(firebaseAuth&&firebaseSignOut)await firebaseSignOut(firebaseAuth);googleUser=null;firebaseStatus('Firebase: signed out.');updateGoogleHeader();render()};
  updateGoogleHeader();
 }
 
