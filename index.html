@@ -18,25 +18,48 @@ function renderLibrary(){let docs=state.docs;return `${heading('Document library
 let googleAccessToken='',googleTokenExpiry=0,googleTokenClient=null,foundDocs=[];
 const DOC_SCOPES='https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file';
 function folderId(){let v=localStorage.getItem('che-document-folder')||'';let m=v.match(/\/folders\/([\w-]+)/);return m?m[1]:v.trim()}
-function documentControls(){return `<div class="card" style="margin:12px 0;background:#f7fbfd"><h3>Google document connection</h3><p class="small">Connect your own Google account to search Gmail and Drive. This is separate from White Board sign-in. Google may require OAuth consent-screen configuration before access works.</p><div class="row"><button id="connectDocuments" type="button">${googleAccessToken&&Date.now()<googleTokenExpiry?'Reconnect Google documents':'Connect Gmail and Drive'}</button><span id="documentConnection" class="small">${googleAccessToken&&Date.now()<googleTokenExpiry?'Google document access authorized for this session':'Not connected'}</span></div><label>Shared Google Drive destination folder (paste its folder link)</label><input id="sharedFolder" value="${esc(localStorage.getItem('che-document-folder')||'')}" placeholder="https://drive.google.com/drive/folders/…"><div class="row"><button type="button" id="saveSharedFolder">Save folder</button><span class="small">Gmail attachments will be copied here. The folder must permit you to add files and Kaedi to open them.</span></div><label>Associate imported document with project</label><select id="importProject"><option value="">Unassigned</option>${state.projects.map(p=>`<option value="${esc(p.id)}" ${p.id==='p-chama'?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div>`}
-function wireDocumentControls(){if(!$('connectDocuments'))return;$('connectDocuments').onclick=()=>authorizeDocuments().then(()=>{$('documentConnection').textContent='Connected for this session'}).catch(e=>alert('Google authorization: '+e.message));$('saveSharedFolder').onclick=()=>{let v=$('sharedFolder').value.trim();if(v&&!/^(https:\/\/drive\.google\.com\/drive\/folders\/[\w-]+(?:[?/#].*)?|[\w-]{15,})$/.test(v))return alert('Paste the Google Drive folder link, not a document link.');localStorage.setItem('che-document-folder',v);alert('Destination folder saved in this browser.')};}
-function authorizeDocuments(){return new Promise((resolve,reject)=>{
- if(!googleUser)return reject(Error('Sign into the White Board first.'));
- if(!window.google?.accounts?.oauth2)return reject(Error('Google authorization library is not loaded. Refresh the page.'));
- const status=$('documentConnection');if(status)status.textContent='Waiting for Google authorization…';
- let settled=false;const timeout=setTimeout(()=>finish(Error('Google did not return an access token within 60 seconds. The authorization popup may have been blocked from communicating with the White Board.')),60000);
- function finish(err,token){if(settled)return;settled=true;clearTimeout(timeout);if(err){console.error('Google document authorization failed',err);if(status)status.textContent='Not connected — '+err.message;reject(err)}else{if(status)status.textContent='Connected for this session';resolve(token)}}
+function documentControls(){return `<div class="card" style="margin:12px 0;background:#f7fbfd"><h3>Google document connection</h3><p class="small">Connect your own Google account to search Gmail and Drive. This is separate from White Board sign-in. Google may require OAuth consent-screen configuration before access works.</p><div class="row"><button id="connectDocuments" type="button">${googleAccessToken&&Date.now()<googleTokenExpiry?'Reconnect Google documents':'Connect Gmail and Drive'}</button><span id="documentConnection" class="small">${googleAccessToken&&Date.now()<googleTokenExpiry?'Google document access authorized for this session':(documentAuthMessage||'Not connected')}</span></div><label>Shared Google Drive destination folder (paste its folder link)</label><input id="sharedFolder" value="${esc(localStorage.getItem('che-document-folder')||'')}" placeholder="https://drive.google.com/drive/folders/…"><div class="row"><button type="button" id="saveSharedFolder">Save folder</button><span class="small">Gmail attachments will be copied here. The folder must permit you to add files and Kaedi to open them.</span></div><label>Associate imported document with project</label><select id="importProject"><option value="">Unassigned</option>${state.projects.map(p=>`<option value="${esc(p.id)}" ${p.id==='p-chama'?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div>`}
+function wireDocumentControls(){if(!$('connectDocuments'))return;$('connectDocuments').onclick=()=>authorizeDocuments().catch(e=>{const status=$('documentConnection');if(status)status.textContent='Not connected — '+e.message;alert('Google authorization: '+e.message)});$('saveSharedFolder').onclick=()=>{let v=$('sharedFolder').value.trim();if(v&&!/^(https:\/\/drive\.google\.com\/drive\/folders\/[\w-]+(?:[?/#].*)?|[\w-]{15,})$/.test(v))return alert('Paste the Google Drive folder link, not a document link.');localStorage.setItem('che-document-folder',v);alert('Destination folder saved in this browser.')};}
+// Redirect authorization avoids the popup-to-parent messaging failure. The OAuth
+// response is a URL fragment, which is removed immediately and never sent to Firestore.
+const DOC_OAUTH_PENDING='che-doc-oauth-pending-v1';
+const DOC_OAUTH_TOKEN='che-doc-oauth-token-v1';
+const DOC_OAUTH_RETURN='che-doc-oauth-return-v1';
+let documentAuthMessage='';
+function documentRedirectUri(){return location.origin+location.pathname}
+function authorizeDocuments(){
+ if(!googleUser)return Promise.reject(Error('Sign into the White Board first.'));
+ const nonce=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>b.toString(16).padStart(2,'0')).join('');
  try{
-  // Create a fresh token client for each request so its callback cannot be left stale.
-  googleTokenClient=google.accounts.oauth2.initTokenClient({
-   client_id:GOOGLE_CLIENT_ID,scope:DOC_SCOPES,
-   callback:r=>{console.info('Google document authorization response received',r?.error?'error':'token response');if(r?.error)return finish(Error(r.error_description||r.error));if(!r?.access_token)return finish(Error('Google returned no access token.'));googleAccessToken=r.access_token;googleTokenExpiry=Date.now()+Math.max(60,Number(r.expires_in||3600)-60)*1000;finish(null,googleAccessToken)},
-   error_callback:e=>finish(Error('Google authorization popup failed: '+(e?.type||'unknown error')+(e?.message?' — '+e.message:'')))
-  });
-  // On repeat authorization, do not force another consent screen unless Google needs it.
-  googleTokenClient.requestAccessToken({prompt:googleAccessToken?'':'consent'});
- }catch(e){finish(e)}
-})}
+  sessionStorage.setItem(DOC_OAUTH_PENDING,JSON.stringify({nonce,created:Date.now()}));
+  sessionStorage.setItem(DOC_OAUTH_RETURN,location.hash.startsWith('#task/')?location.hash:location.hash||'#home');
+ }catch(e){return Promise.reject(Error('Browser session storage is unavailable: '+e.message))}
+ const params=new URLSearchParams({client_id:GOOGLE_CLIENT_ID,redirect_uri:documentRedirectUri(),response_type:'token',scope:DOC_SCOPES,state:nonce,include_granted_scopes:'true',prompt:'consent'});
+ location.assign('https://accounts.google.com/o/oauth2/v2/auth?'+params.toString());
+ return new Promise(()=>{});
+}
+function recoverDocumentAuthorization(){
+ // Called before the app's hash router starts, since OAuth uses the same fragment.
+ const fragment=location.hash.slice(1);
+ if(!/(?:^|&)(?:access_token|error|state)=/.test(fragment)){
+  try{const stored=JSON.parse(sessionStorage.getItem(DOC_OAUTH_TOKEN)||'null');if(stored?.token&&stored.expiry>Date.now()){googleAccessToken=stored.token;googleTokenExpiry=stored.expiry}}catch{}
+  return;
+ }
+ const p=new URLSearchParams(fragment),raw=sessionStorage.getItem(DOC_OAUTH_PENDING);
+ const returnHash=sessionStorage.getItem(DOC_OAUTH_RETURN)||'#home';
+ // Remove credentials from the address bar before displaying or logging anything.
+ history.replaceState(null,'',documentRedirectUri()+(returnHash.startsWith('#')?returnHash:'#home'));
+ sessionStorage.removeItem(DOC_OAUTH_PENDING);sessionStorage.removeItem(DOC_OAUTH_RETURN);
+ try{
+  const pending=JSON.parse(raw||'null');
+  if(!pending||Date.now()-pending.created>10*60*1000||pending.nonce!==p.get('state'))throw Error('Google authorization state could not be verified. Please reconnect.');
+  if(p.get('error'))throw Error(p.get('error_description')||p.get('error'));
+  const token=p.get('access_token');if(!token||p.get('token_type')?.toLowerCase()!=='bearer')throw Error('Google did not return a usable access token.');
+  googleAccessToken=token;googleTokenExpiry=Date.now()+Math.max(60,Number(p.get('expires_in')||3600)-60)*1000;
+  sessionStorage.setItem(DOC_OAUTH_TOKEN,JSON.stringify({token,expiry:googleTokenExpiry}));
+  documentAuthMessage='Connected for this session';
+ }catch(e){documentAuthMessage='Not connected — '+e.message;console.error('Google document redirect authorization failed:',e.message)}
+}
 async function accessToken(){if(googleAccessToken&&Date.now()<googleTokenExpiry)return googleAccessToken;throw Error('Connect Gmail and Drive above, then search again.')}
 async function googleApi(url,options={}){const token=await accessToken();let r=await fetch(url,{...options,headers:{Authorization:'Bearer '+token,...(options.headers||{})}});if(!r.ok){let body=await r.json().catch(()=>({}));throw Error((body.error?.message||r.statusText)+' (HTTP '+r.status+')')}return r.status===204?{}:r.json()}
 function gmailParts(part,arr=[]){if(part.filename&&part.body?.attachmentId)arr.push({name:part.filename,attachmentId:part.body.attachmentId,mimeType:part.mimeType,size:part.body.size});for(const x of part.parts||[])gmailParts(x,arr);return arr}
@@ -201,9 +224,9 @@ function setupGoogleIdentity(){
  if(!window.google?.accounts?.id){setTimeout(setupGoogleIdentity,350);return}
  google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onGoogleCredential,auto_select:false});
  google.accounts.id.renderButton($('googleSignIn'),{theme:'outline',size:'medium',text:'signin_with'});
- $('googleSignOut').onclick=async()=>{if(cloudUnsubscribe){clearInterval(cloudUnsubscribe);cloudUnsubscribe=null}cloudReady=false;cloudNoAction();google.accounts.id.disableAutoSelect();if(firebaseAuth&&firebaseSignOut)await firebaseSignOut(firebaseAuth);googleUser=null;googleAccessToken='';googleTokenExpiry=0;firebaseStatus('Firebase: signed out.');updateGoogleHeader();render()};
+ $('googleSignOut').onclick=async()=>{if(cloudUnsubscribe){clearInterval(cloudUnsubscribe);cloudUnsubscribe=null}cloudReady=false;cloudNoAction();google.accounts.id.disableAutoSelect();if(firebaseAuth&&firebaseSignOut)await firebaseSignOut(firebaseAuth);googleUser=null;googleAccessToken='';googleTokenExpiry=0;sessionStorage.removeItem(DOC_OAUTH_TOKEN);firebaseStatus('Firebase: signed out.');updateGoogleHeader();render()};
  updateGoogleHeader();
 }
 
-try{state=JSON.parse(localStorage.getItem(KEY))||structuredClone(seed)}catch{state=structuredClone(seed)}state.projects??=[];state.tasks??=[];state.docs??=[];state.contacts??=[];state.author??='';openDB().then(x=>db=x).catch(()=>{});window.addEventListener('hashchange',render);render();updateGoogleHeader();initFirebase().then(setupGoogleIdentity);
+try{state=JSON.parse(localStorage.getItem(KEY))||structuredClone(seed)}catch{state=structuredClone(seed)}state.projects??=[];state.tasks??=[];state.docs??=[];state.contacts??=[];state.author??='';openDB().then(x=>db=x).catch(()=>{});recoverDocumentAuthorization();window.addEventListener('hashchange',render);render();updateGoogleHeader();initFirebase().then(setupGoogleIdentity);
 </script></body></html>
