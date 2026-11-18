@@ -23,86 +23,118 @@ async function openDoc(docid){let d=state.docs.find(x=>x.id===docid);if(!d)retur
 function render(){let path=decodeURIComponent((location.hash||'#home').slice(1)).split('/'),view=path[0],html=view==='category'?renderCategory(path.slice(1).join('/')):view==='project'&&proj(path[1])?renderProject(proj(path[1])):view==='task'&&task(path[1])?renderTask(task(path[1])):view==='library'?renderLibrary():view==='attach'?renderAttach(path[1],path[2]):view==='completed'?renderCompleted():renderHome();$('app').innerHTML=html;document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>route(b.dataset.go));document.querySelectorAll('[data-done]').forEach(b=>b.onchange=()=>{let t=task(b.dataset.done);t.done=b.checked;t.completedAt=t.done?date():null;t.updatedBy=state.author;save();render()});document.querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDoc(b.dataset.openDoc));if(view==='category')$('newProject').onsubmit=e=>{e.preventDefault();let f=new FormData(e.target);state.projects.push({id:id(),name:f.get('name').trim(),category:path.slice(1).join('/'),createdBy:state.author,createdAt:date()});save();render()};if(view==='project'){let p=proj(path[1]);const createTask=()=>{const form=$('newTask');const title=form.elements.namedItem('title').value.trim();if(!title){form.elements.namedItem('title').focus();return;}const newTaskId=id();state.tasks.push({id:newTaskId,title,due:form.elements.namedItem('due').value,projectId:p.id,done:false,notes:'',createdBy:state.author,createdAt:date()});save();location.hash='task/'+newTaskId;render();window.scrollTo(0,0)};$('newTask').onsubmit=e=>{e.preventDefault();createTask()};$('showDone').onclick=()=>$('donePanel').classList.toggle('hidden')}if(view==='task'){let t=task(path[1]);wireGlobalSearch();let updateContactLinks=()=>{let phone=$('contactPhone').value.trim(),email=$('contactEmail').value.trim(),call=$('taskCall'),mail=$('taskEmailLink');call.style.display=phone?'inline-block':'none';mail.style.display=email?'inline-block':'none';call.href='tel:'+phone.replace(/[^+0-9]/g,'');mail.href='mailto:'+encodeURIComponent(email)};$('contactPhone').oninput=updateContactLinks;$('contactEmail').oninput=updateContactLinks;updateContactLinks();$('lookupContact').onclick=()=>{let name=$('contactName').value.trim()||t.title;window.open('https://mail.google.com/mail/u/0/#search/'+encodeURIComponent(name),'_blank','noopener')};$('lookupGoogleContacts').onclick=()=>window.open('https://contacts.google.com/','_blank','noopener');$('findSavedContact').onclick=()=>{let q=$('contactName').value.trim().toLowerCase(),matches=state.contacts.filter(c=>!q||c.name.toLowerCase().includes(q)||c.email.toLowerCase().includes(q));let panel=$('contactResults');panel.classList.remove('hidden');panel.innerHTML='<strong>Saved White Board contacts</strong>'+ (matches.length?matches.map(c=>`<div class="item"><div class="grow"><strong>${esc(c.name)}</strong><div class="small">${esc(c.phone)} · ${esc(c.email)} · ${esc(c.source||'Source not recorded')}</div></div><button data-pick-contact="${esc(c.id)}">Use contact</button></div>`).join(''):'<p class="small">No matching contacts saved yet. Find details in Gmail or Contacts, enter them here, and save the task.</p>');panel.querySelectorAll('[data-pick-contact]').forEach(b=>b.onclick=()=>{let c=state.contacts.find(x=>x.id===b.dataset.pickContact);$('contactName').value=c.name;$('contactPhone').value=c.phone;$('contactEmail').value=c.email;$('contactSource').value=c.source||'';updateContactLinks();panel.classList.add('hidden')})};$('taskUpload').onsubmit=async e=>{e.preventDefault();let f=new FormData(e.target),file=f.get('file');if(!file||!file.size)return alert('Choose a file');if(!db)return alert('Browser file storage is unavailable');let d={id:id(),title:String(f.get('title')).trim(),description:String(f.get('description')||''),filename:file.name,projectIds:[t.projectId],taskIds:[t.id],createdAt:date(),createdBy:state.author};try{await putFile(d.id,file);state.docs.push(d);save();render()}catch(err){alert('Could not save file: '+err.message)}};$('saveTask').onclick=()=>{t.contactName=$('contactName').value;t.contactPhone=$('contactPhone').value;t.contactEmail=$('contactEmail').value;t.contactSource=$('contactSource').value;let name=t.contactName.trim(),email=t.contactEmail.trim();if(name){let c=state.contacts.find(c=>(email&&c.email.toLowerCase()===email.toLowerCase())||c.name.toLowerCase()===name.toLowerCase());if(!c){c={id:id(),name,phone:'',email:'',source:'',createdAt:date()};state.contacts.push(c)}c.name=name;c.phone=t.contactPhone;c.email=email;c.source=t.contactSource;c.updatedAt=date()}t.notes=$('taskNotes').value;t.updatedBy=state.author;t.updatedAt=date();save();render()};$('toggleTask').onclick=()=>{t.done=!t.done;t.completedAt=t.done?date():null;t.updatedBy=state.author;save();render()}}if(view==='attach'){let kind=path[1],target=path[2],owner=kind==='project'?proj(target):task(target);let show=()=>{let q=$('attachSearch').value.toLowerCase();let matches=state.docs.filter(d=>(d.title+' '+(d.description||'')+' '+(d.filename||'')).toLowerCase().includes(q));$('attachResults').innerHTML=matches.map(d=>{let linked=kind==='project'?(d.projectIds||[d.projectId].filter(Boolean)).includes(target):(d.taskIds||[d.taskId].filter(Boolean)).includes(target);return `<div class="item"><div class="grow"><strong>${esc(d.title)}</strong><div class="small">${esc(d.description||d.filename||'')}</div></div><button data-open-doc="${d.id}">Open</button><button data-attach-doc="${d.id}" ${linked?'disabled':''}>${linked?'Attached':'Attach'}</button></div>`}).join('')||'<p>No matching documents. Add a document from the library page.</p>';$('attachResults').querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDoc(b.dataset.openDoc));$('attachResults').querySelectorAll('[data-attach-doc]').forEach(b=>b.onclick=()=>{let d=state.docs.find(x=>x.id===b.dataset.attachDoc);let key=kind==='project'?'projectIds':'taskIds';d[key]=[...new Set([...(d[key]||[d[kind==='project'?'projectId':'taskId']].filter(Boolean)),target])];d.updatedAt=date();save();show()})};$('attachSearch').oninput=show;show()}
 if(view==='library'){wireGlobalSearch();let show=()=>{let q=$('docSearch').value.toLowerCase();let docs=state.docs.filter(d=>(d.title+' '+d.description+' '+(d.projectIds||[d.projectId].filter(Boolean)).map(x=>proj(x)?.name||'').join(' ')+' '+(d.taskIds||[d.taskId].filter(Boolean)).map(x=>task(x)?.title||'').join(' ')).toLowerCase().includes(q));$('docResults').innerHTML=docs.map(docRow).join('')||'<p>No matching documents.</p>';$('docResults').querySelectorAll('[data-open-doc]').forEach(b=>b.onclick=()=>openDoc(b.dataset.openDoc))};$('docSearch').oninput=show;$('addDoc').onsubmit=async e=>{e.preventDefault();let f=new FormData(e.target),file=f.get('file'),url=String(f.get('url')||'').trim();if((!file||!file.size)&&!url){alert('Choose a file or enter a document URL.');return}let d={id:id(),title:String(f.get('title')).trim(),projectId:f.get('projectId'),taskId:f.get('taskId'),description:f.get('description'),url,filename:file?.size?file.name:'',createdBy:state.author,createdAt:date()};try{if(file?.size){if(!db)throw Error('Local file storage is unavailable');await putFile(d.id,file)}d.projectIds=d.projectId?[d.projectId]:[];d.taskIds=d.taskId?[d.taskId]:[];state.docs.push(d);save();render()}catch(err){alert('Unable to save document: '+err.message)}}}}
 
-// Firebase authentication is initialized separately from the existing White Board data.
-// IMPORTANT: Do not write local projects or private documents to Firestore until
-// an explicit two-user allowlist is enforced by Firestore Security Rules.
+// Firebase Authentication is retained. Firestore data uses authenticated REST HTTPS requests.
+// The Firestore Security Rules must enforce the two authorized accounts; client-side checks are not security.
 const firebaseConfig={apiKey:"AIzaSyCSzKMuT53SCp8781nWy9FzpLD8nw1GoVA",authDomain:"che-whiteboard.firebaseapp.com",projectId:"che-whiteboard",storageBucket:"che-whiteboard.firebasestorage.app",messagingSenderId:"105419808603",appId:"1:105419808603:web:b46b41001b553dc092847e"};
 let firebaseAuth=null, firebaseSignInWithCredential=null, firebaseGoogleProvider=null, firebaseSignOut=null;
-let firestore=null, cloudDocRef=null, cloudGetDoc=null, cloudSetDoc=null, cloudRunTransaction=null, cloudOnSnapshot=null;
-let cloudReady=false, cloudDirty=false, cloudConflict=false, cloudRevision=0, cloudWritePromise=Promise.resolve(), cloudUnsubscribe=null;
+let cloudReady=false,cloudDirty=false,cloudConflict=false,cloudRevision=0,cloudUpdateTime=null,cloudWritePromise=Promise.resolve(),cloudUnsubscribe=null;
 const CLOUD_PATH=['workspaces','che-white-board'];
+const CLOUD_BASE='https://firestore.googleapis.com/v1/projects/'+firebaseConfig.projectId+'/databases/(default)/documents';
+const CLOUD_NAME='projects/'+firebaseConfig.projectId+'/databases/(default)/documents/'+CLOUD_PATH.join('/');
+const CLOUD_URL=CLOUD_BASE+'/'+CLOUD_PATH.map(encodeURIComponent).join('/');
 const cloudButton=()=>document.getElementById('cloudAction');
 function cloudAction(label,fn){let b=cloudButton();if(!b)return;b.style.display='inline-block';b.textContent=label;b.onclick=fn}
 function cloudNoAction(){let b=cloudButton();if(b){b.style.display='none';b.onclick=null}}
 function normalizedState(v){return {projects:Array.isArray(v?.projects)?v.projects:[],tasks:Array.isArray(v?.tasks)?v.tasks:[],docs:Array.isArray(v?.docs)?v.docs:[],contacts:Array.isArray(v?.contacts)?v.contacts:[],author:state.author||''}}
 function adoptCloud(data,rev){const email=googleUser?.email||state.author;state=normalizedState(data);state.author=email;cloudRevision=rev;try{localStorage.setItem(KEY,JSON.stringify(state))}catch{}render()}
-async function diagnoseCloudRead(originalError){
- console.warn('Firestore SDK read failed; testing authenticated REST read (read-only).',originalError);
- try{
-  const user=firebaseAuth?.currentUser;
-  if(!user)throw Error('No Firebase authenticated user');
-  const token=await user.getIdToken();
-  const url='https://firestore.googleapis.com/v1/projects/'+encodeURIComponent(firebaseConfig.projectId)+'/databases/(default)/documents/'+CLOUD_PATH.map(encodeURIComponent).join('/');
-  const response=await fetch(url,{headers:{Authorization:'Bearer '+token},cache:'no-store'});
-  const body=await response.json().catch(()=>({}));
-  console.info('Firestore REST diagnostic HTTP status:',response.status,'response:',body);
-  if(response.status===404){firebaseStatus('Firestore REST connection works; shared workspace does not exist yet. SDK connection failed. Local data is safe.');return}
-  if(response.ok){firebaseStatus('Firestore REST connection works; SDK connection failed. Local data is safe.');return}
-  firebaseStatus('Firestore REST diagnostic: HTTP '+response.status+' ('+(body.error?.status||'unknown')+'). Local data is safe.');
- }catch(e){console.error('Firestore REST diagnostic failed',e);firebaseStatus('Firestore SDK and REST connection failed: '+e.message+'. Local data is safe.')}
+function firebaseStatus(message){const e=$('firebaseStatus');if(e)e.textContent=message}
+// Encode/decode the Firestore REST typed-value format, including nested arrays and maps.
+function firestoreValue(v){
+ if(v===null||v===undefined)return {nullValue:null};
+ if(Array.isArray(v))return {arrayValue:{values:v.map(firestoreValue)}};
+ if(typeof v==='object')return {mapValue:{fields:Object.fromEntries(Object.entries(v).filter(([,x])=>x!==undefined).map(([k,x])=>[k,firestoreValue(x)]))}};
+ if(typeof v==='boolean')return {booleanValue:v};
+ if(typeof v==='number')return Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v};
+ return {stringValue:String(v)};
 }
-function cloudError(err){console.error('Cloud sync error',err);firebaseStatus('Cloud sync paused: '+(err.code||err.message)+'. Checking direct Firestore access…');cloudReady=false;diagnoseCloudRead(err)}
+function fromFirestoreValue(v){
+ if(!v||'nullValue'in v)return null;
+ if('mapValue'in v)return Object.fromEntries(Object.entries(v.mapValue.fields||{}).map(([k,x])=>[k,fromFirestoreValue(x)]));
+ if('arrayValue'in v)return (v.arrayValue.values||[]).map(fromFirestoreValue);
+ if('integerValue'in v)return Number(v.integerValue);
+ if('doubleValue'in v)return Number(v.doubleValue);
+ if('booleanValue'in v)return v.booleanValue;
+ if('stringValue'in v)return v.stringValue;
+ if('timestampValue'in v)return v.timestampValue;
+ return null;
+}
+async function cloudRequest(url,options={}){
+ const user=firebaseAuth?.currentUser;
+ if(!user)throw Error('Firebase sign-in is required');
+ const token=await user.getIdToken();
+ const res=await fetch(url,{...options,cache:'no-store',headers:{Authorization:'Bearer '+token,...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})}});
+ const body=await res.json().catch(()=>({}));
+ if(!res.ok&&res.status!==404){const e=new Error(body.error?.message||'HTTP '+res.status);e.status=res.status;throw e}
+ return {status:res.status,body};
+}
+async function readCloudDocument(){
+ const {status,body}=await cloudRequest(CLOUD_URL);
+ if(status===404)return null;
+ const fields=body.fields||{};
+ return {data:fromFirestoreValue(fields.data),revision:Number(fromFirestoreValue(fields.revision)||0),updateTime:body.updateTime};
+}
+async function commitCloud(payload,revision,precondition){
+ const fields={data:firestoreValue(payload),revision:firestoreValue(revision),updatedAt:firestoreValue(new Date().toISOString()),updatedBy:firestoreValue(firebaseAuth.currentUser.email)};
+ const write={update:{name:CLOUD_NAME,fields},currentDocument:precondition};
+ const {body}=await cloudRequest(CLOUD_BASE+':commit',{method:'POST',body:JSON.stringify({writes:[write]})});
+ return body.writeResults?.[0]?.updateTime||null;
+}
+function cloudError(err){console.error('Cloud REST error',err);firebaseStatus('Cloud connection error: '+err.message+'. Local browser data is safe.');cloudReady=false}
 function queueCloudSave(){cloudWritePromise=cloudWritePromise.then(async()=>{
  if(!cloudReady||cloudConflict||!cloudDirty)return;
- cloudDirty=false;const payload=normalizedState(state), expected=cloudRevision;
+ cloudDirty=false;const payload=normalizedState(state),expected=cloudRevision,version=cloudUpdateTime;
  try{
-  const next=await cloudRunTransaction(firestore,async tx=>{
-   const snap=await tx.get(cloudDocRef);const current=snap.exists()?Number(snap.data().revision||0):0;
-   if(!snap.exists()||current!==expected)throw Error('Cloud data changed on another device');
-   tx.set(cloudDocRef,{data:payload,revision:current+1,updatedAt:new Date().toISOString(),updatedBy:googleUser.email});return current+1;
-  });cloudRevision=next;firebaseStatus('Cloud synced as '+googleUser.email+'.');
- }catch(err){cloudDirty=true;cloudConflict=true;firebaseStatus('Cloud conflict or write error: '+err.message+'. Changes remain in this browser.');cloudAction('Review cloud changes',()=>{if(confirm('This will load the latest shared data. Your unsynced browser edits will remain in local storage only until overwritten. Continue?'))loadCloudWorkspace(true)})}
+  const updateTime=await commitCloud(payload,expected+1,{updateTime:version});
+  cloudRevision=expected+1;cloudUpdateTime=updateTime;firebaseStatus('Cloud saved as '+googleUser.email+'.');
+ }catch(err){cloudDirty=true;cloudConflict=true;firebaseStatus('Cloud save blocked: '+err.message+'. Your edits remain in this browser.');cloudAction('Review cloud version',()=>loadCloudWorkspace(true))}
+ if(cloudDirty&&!cloudConflict)queueCloudSave();
  }).catch(cloudError)}
-async function loadCloudWorkspace(force=false){
- if(!cloudDocRef)return;
+async function pollCloud(){
+ if(!cloudReady||cloudDirty||cloudConflict)return;
  try{
-  const snap=await cloudGetDoc(cloudDocRef);
-  if(!snap.exists()){
-   cloudReady=false;cloudNoAction();firebaseStatus('Shared workspace is empty. Your browser data is still intact.');
-   if(googleUser?.email==='rogval@gmail.com')cloudAction('Initialize shared workspace',initializeCloudWorkspace);
+  const remote=await readCloudDocument();if(!remote)return;
+  if(remote.revision<=cloudRevision)return;
+  if(cloudDirty){cloudConflict=true;firebaseStatus('Cloud changed while local edits were pending.');return}
+  adoptCloud(remote.data,remote.revision);cloudUpdateTime=remote.updateTime;firebaseStatus('Cloud updated from shared workspace.');
+ }catch(err){console.warn('Cloud polling failed; local data retained',err);firebaseStatus('Cloud refresh unavailable: '+err.message+'. Local data is safe.')}
+}
+async function loadCloudWorkspace(force=false){
+ try{
+  const remote=await readCloudDocument();
+  if(!remote){cloudReady=false;cloudNoAction();firebaseStatus('Connected to Firestore. Shared workspace is empty; browser data is intact.');
+   if(firebaseAuth.currentUser?.email==='rogval@gmail.com')cloudAction('Initialize shared workspace',initializeCloudWorkspace);
    return;
   }
   if(cloudDirty&&!force){cloudConflict=true;firebaseStatus('Unsynced local changes detected; cloud data was not loaded.');return}
-  cloudConflict=false;cloudDirty=false;adoptCloud(snap.data().data,Number(snap.data().revision||0));cloudReady=true;cloudNoAction();firebaseStatus('Cloud synced as '+googleUser.email+'.');
-  if(cloudUnsubscribe)cloudUnsubscribe();
-  cloudUnsubscribe=cloudOnSnapshot(cloudDocRef,ss=>{
-   if(!ss.exists()||!cloudReady)return;
-   const rev=Number(ss.data().revision||0);
-   if(rev<=cloudRevision)return;
-   if(cloudDirty){cloudConflict=true;firebaseStatus('Cloud changed while you have unsynced edits. Refresh only after preserving them.');return}
-   adoptCloud(ss.data().data,rev);firebaseStatus('Cloud updated from shared workspace.');
-  },cloudError);
+  // First load: ask before replacing any local work that differs from cloud.
+  if(!cloudReady&&!force&&JSON.stringify(normalizedState(state))!==JSON.stringify({...normalizedState(remote.data),author:state.author})){
+   if(!confirm('A shared workspace exists. Loading it will replace the projects and tasks shown in this browser. Your current browser copy will be backed up first. Continue?')){
+    firebaseStatus('Cloud workspace found; local data kept until you approve loading it.');cloudAction('Load shared workspace',()=>loadCloudWorkspace(true));return;
+   }
+  }
+  if(!cloudReady){try{localStorage.setItem(KEY+'-backup-'+Date.now(),JSON.stringify(state))}catch{}}
+  cloudConflict=false;cloudDirty=false;adoptCloud(remote.data,remote.revision);cloudUpdateTime=remote.updateTime;cloudReady=true;cloudNoAction();firebaseStatus('Cloud synced as '+googleUser.email+'.');
+  if(cloudUnsubscribe)clearInterval(cloudUnsubscribe);
+  cloudUnsubscribe=setInterval(pollCloud,12000);
  }catch(err){cloudError(err)}
 }
 async function initializeCloudWorkspace(){
  if(!confirm('Initialize the shared workspace using the projects and tasks currently shown in THIS browser? This will make them visible to both authorized accounts.'))return;
  try{
   const payload=normalizedState(state);
-  await cloudRunTransaction(firestore,async tx=>{const snap=await tx.get(cloudDocRef);if(snap.exists())throw Error('Workspace already initialized; reload instead');tx.set(cloudDocRef,{data:payload,revision:1,updatedAt:new Date().toISOString(),updatedBy:googleUser.email})});
+  await commitCloud(payload,1,{exists:false});
   await loadCloudWorkspace();
- }catch(err){cloudError(err);cloudAction('Load shared workspace',()=>loadCloudWorkspace())}
+ }catch(err){cloudError(err);cloudAction('Retry cloud connection',()=>loadCloudWorkspace())}
 }
-function firebaseStatus(message){const e=$('firebaseStatus');if(e)e.textContent=message}
 async function initFirebase(){
  try{
-  const [{initializeApp},{getAuth,GoogleAuthProvider,signInWithCredential,signOut},{initializeFirestore,doc,getDoc,runTransaction,onSnapshot}]=await Promise.all([
+  const [{initializeApp},{getAuth,GoogleAuthProvider,signInWithCredential,signOut}]=await Promise.all([
    import('https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js'),
-   import('https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js'),
-   import('https://www.gstatic.com/firebasejs/11.10.0/firebase-firestore.js')]);
+   import('https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js')]);
   const app=initializeApp(firebaseConfig);
-  firebaseAuth=getAuth(app);firebaseGoogleProvider=GoogleAuthProvider;firestore=initializeFirestore(app,{experimentalAutoDetectLongPolling:true});cloudDocRef=doc(firestore,...CLOUD_PATH);cloudGetDoc=getDoc;cloudRunTransaction=runTransaction;cloudOnSnapshot=onSnapshot;
+  firebaseAuth=getAuth(app);firebaseGoogleProvider=GoogleAuthProvider;
   firebaseSignInWithCredential=signInWithCredential;firebaseSignOut=signOut;
-  firebaseStatus('Firebase: ready for sign-in.');
+  firebaseStatus('Firebase Authentication ready. Database connection uses REST.');
  }catch(err){console.error('Firebase initialization failed',err);firebaseStatus('Firebase unavailable; local White Board remains usable.')}
 }
 async function authenticateFirebase(googleIdToken){
@@ -136,7 +168,7 @@ function setupGoogleIdentity(){
  if(!window.google?.accounts?.id){setTimeout(setupGoogleIdentity,350);return}
  google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onGoogleCredential,auto_select:false});
  google.accounts.id.renderButton($('googleSignIn'),{theme:'outline',size:'medium',text:'signin_with'});
- $('googleSignOut').onclick=async()=>{if(cloudUnsubscribe){cloudUnsubscribe();cloudUnsubscribe=null}cloudReady=false;cloudNoAction();google.accounts.id.disableAutoSelect();if(firebaseAuth&&firebaseSignOut)await firebaseSignOut(firebaseAuth);googleUser=null;firebaseStatus('Firebase: signed out.');updateGoogleHeader();render()};
+ $('googleSignOut').onclick=async()=>{if(cloudUnsubscribe){clearInterval(cloudUnsubscribe);cloudUnsubscribe=null}cloudReady=false;cloudNoAction();google.accounts.id.disableAutoSelect();if(firebaseAuth&&firebaseSignOut)await firebaseSignOut(firebaseAuth);googleUser=null;firebaseStatus('Firebase: signed out.');updateGoogleHeader();render()};
  updateGoogleHeader();
 }
 
