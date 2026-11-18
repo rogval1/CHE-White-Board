@@ -64,7 +64,7 @@ async function cloudRequest(url,options={}){
  const token=await user.getIdToken();
  const res=await fetch(url,{...options,cache:'no-store',headers:{Authorization:'Bearer '+token,...(options.body?{'Content-Type':'application/json'}:{}),...(options.headers||{})}});
  const body=await res.json().catch(()=>({}));
- if(!res.ok&&res.status!==404){const e=new Error(body.error?.message||'HTTP '+res.status);e.status=res.status;throw e}
+ if(!res.ok && !(res.status===404 && (!options.method || options.method==='GET'))){const e=new Error(body.error?.message||'HTTP '+res.status+' at '+url);e.status=res.status;console.error('Firestore request failed', {url, status:res.status, response:body});throw e}
  return {status:res.status,body};
 }
 async function readCloudDocument(){
@@ -75,9 +75,12 @@ async function readCloudDocument(){
 }
 async function commitCloud(payload,revision,precondition){
  const fields={data:firestoreValue(payload),revision:firestoreValue(revision),updatedAt:firestoreValue(new Date().toISOString()),updatedBy:firestoreValue(firebaseAuth.currentUser.email)};
- const write={update:{name:CLOUD_NAME,fields},currentDocument:precondition};
- const {body}=await cloudRequest(CLOUD_BASE+':commit',{method:'POST',body:JSON.stringify({writes:[write]})});
- return body.writeResults?.[0]?.updateTime||null;
+ const params=new URLSearchParams();
+ if(precondition?.exists===false)params.set('currentDocument.exists','false');
+ if(precondition?.updateTime)params.set('currentDocument.updateTime',precondition.updateTime);
+ const {body}=await cloudRequest(CLOUD_URL+'?'+params.toString(),{method:'PATCH',body:JSON.stringify({name:CLOUD_NAME,fields})});
+ if(!body.updateTime)throw Error('Firestore did not return a document update time');
+ return body.updateTime;
 }
 function cloudError(err){console.error('Cloud REST error',err);firebaseStatus('Cloud connection error: '+err.message+'. Local browser data is safe.');cloudReady=false}
 function queueCloudSave(){cloudWritePromise=cloudWritePromise.then(async()=>{
