@@ -29,8 +29,8 @@ const firebaseConfig={apiKey:"AIzaSyCSzKMuT53SCp8781nWy9FzpLD8nw1GoVA",authDomai
 let firebaseAuth=null, firebaseSignInWithCredential=null, firebaseGoogleProvider=null, firebaseSignOut=null;
 let cloudReady=false,cloudDirty=false,cloudConflict=false,cloudRevision=0,cloudUpdateTime=null,cloudWritePromise=Promise.resolve(),cloudUnsubscribe=null;
 const CLOUD_PATH=['workspaces','che-white-board'];
-const CLOUD_BASE='https://firestore.googleapis.com/v1/projects/'+firebaseConfig.projectId+'/databases/(default)/documents';
-const CLOUD_NAME='projects/'+firebaseConfig.projectId+'/databases/(default)/documents/'+CLOUD_PATH.join('/');
+const CLOUD_BASE='https://firestore.googleapis.com/v1/projects/'+firebaseConfig.projectId+'/databases/default/documents';
+const CLOUD_NAME='projects/'+firebaseConfig.projectId+'/databases/default/documents/'+CLOUD_PATH.join('/');
 const CLOUD_URL=CLOUD_BASE+'/'+CLOUD_PATH.map(encodeURIComponent).join('/');
 const cloudButton=()=>document.getElementById('cloudAction');
 function cloudAction(label,fn){let b=cloudButton();if(!b)return;b.style.display='inline-block';b.textContent=label;b.onclick=fn}
