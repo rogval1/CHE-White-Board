@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Center for Housing Economics Project White Board</title><style>
 :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#193449;background:#f4f7f9}*{box-sizing:border-box}body{margin:0}header{background:#12364b;color:white;padding:20px max(20px,calc((100vw - 1080px)/2))}header a{color:#d4e8ef;text-decoration:none}main{max-width:1080px;margin:28px auto;padding:0 18px}h1{font-size:28px;margin:5px 0 12px}h2{font-size:19px;margin:0 0 12px}h3{font-size:16px}p{color:#657886;line-height:1.5}.card{background:white;border:1px solid #dbe5eb;border-radius:13px;padding:20px;margin:14px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.category{cursor:pointer;text-align:left;font:inherit;background:white;border:1px solid #dbe5eb;border-radius:12px;padding:22px}.category:hover{border-color:#15819c}.category strong{display:block;font-size:18px}.muted{font-size:13px;color:#71818e}button,.btn{background:white;border:1px solid #b8cbd5;border-radius:8px;padding:9px 12px;color:#17465c;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}button.primary{background:#11677e;color:white;border-color:#11677e}button:disabled{opacity:.5;cursor:default}input,textarea,select{font:inherit;border:1px solid #b9cbd5;border-radius:8px;padding:10px;width:100%;background:white}textarea{min-height:90px}label{display:block;font-size:13px;font-weight:650;margin:12px 0 5px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{min-width:0}.grow{flex:1}.item{display:flex;align-items:flex-start;gap:12px;border-top:1px solid #e6edf1;padding:13px 0}.item:first-child{border-top:0}.item .grow{flex:1}.link{background:none;border:0;padding:0;color:#0d6886;text-decoration:underline;text-align:left;font:inherit;cursor:pointer}.small{font-size:12px;color:#71818e}.badge{background:#e6f2f5;color:#176076;border-radius:30px;padding:4px 9px;font-size:12px}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.hidden{display:none!important}.notice{background:#fff8e9;padding:12px;border-radius:8px;color:#745a27;font-size:13px}.stack{display:grid;gap:10px}.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}a{color:#0d6886}@media(max-width:640px){.grid,.two{grid-template-columns:1fr}header{padding:17px}h1{font-size:24px}.card{padding:15px}}.source-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:13px 0}.source-choice{border:1px solid #d6e3e9;border-radius:9px;padding:10px;display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer}.source-choice input{width:auto}.search-result{border-top:1px solid #e6edf1;padding:14px 0}.search-result strong{display:block}.search-note{font-size:12px;color:#607789;margin:6px 0}.search-panel{background:#f5fafc;border:1px solid #d7e8ee;border-radius:10px;padding:14px;margin-top:12px}@media(max-width:640px){.source-grid{grid-template-columns:repeat(2,minmax(0,1fr))}} </style><script src="https://accounts.google.com/gsi/client" async defer></script></head><body><header><div class="toolbar"><strong>Center for Housing Economics<br>Project White Board</strong><div class="row"><a href="#home">Home</a><a href="#library">Document library</a><span id="googleAccount" style="font-size:12px;color:#d4e8ef"></span><button id="googleSignOut" type="button" style="display:none">Sign out</button><span id="googleSignIn"></span></div></div></header><main><div class="notice" style="margin-bottom:12px"><strong>Integration test:</strong> Cloud sync: projects, tasks, contacts, and document references can be shared after you explicitly initialize the workspace. Uploaded document file contents remain in this browser; Gmail and Drive search are not connected yet. <span id="firebaseStatus">Firebase: waiting for sign-in.</span> <button id="cloudAction" type="button" style="display:none;margin-left:8px"></button></div><div id="app"></div></main><script>
-const cats=['Legislation','Project Pipeline','Capital Outlay','Organizational Development'];const KEY='che-white-board-v1';let state;let db;
+const cats=['Legislation','Project Pipeline','Capital Outlay','Organizational Development','New Mexico Rural Housing Summit'];const KEY='che-white-board-v1';let state;let db;
 const seed={projects:[{id:'p-chama',name:'The Cottages at 161 Chama',category:'Project Pipeline',description:'Recovery and transitional housing',createdBy:'',createdAt:new Date().toISOString()}],tasks:[],docs:[],contacts:[],author:''};
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const id=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);const date=()=>new Date().toISOString();const $=x=>document.getElementById(x);const proj=x=>state.projects.find(p=>p.id===x);const task=x=>state.tasks.find(t=>t.id===x);const save=()=>{let ok=true;try{localStorage.setItem(KEY,JSON.stringify(state))}catch(err){console.warn('Browser storage unavailable',err);ok=false}if(cloudReady&&!cloudConflict){cloudDirty=true;queueCloudSave()}return ok};const route=x=>{const target="#"+x;if(location.hash===target){render()}else{location.hash=target;render()}window.scrollTo(0,0)};
 function openDB(){return new Promise((resolve,reject)=>{let r=indexedDB.open('che-white-board-files-v1',1);r.onupgradeneeded=()=>r.result.createObjectStore('files');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}function putFile(k,f){return new Promise((resolve,reject)=>{let t=db.transaction('files','readwrite');t.objectStore('files').put(f,k);t.oncomplete=resolve;t.onerror=()=>reject(t.error)})}function getFile(k){return new Promise((resolve,reject)=>{let r=db.transaction('files').objectStore('files').get(k);r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
@@ -20,42 +20,45 @@ const DOC_SCOPES='https://www.googleapis.com/auth/gmail.readonly https://www.goo
 function folderId(){let v=localStorage.getItem('che-document-folder')||'';let m=v.match(/\/folders\/([\w-]+)/);return m?m[1]:v.trim()}
 function documentControls(){return `<div class="card" style="margin:12px 0;background:#f7fbfd"><h3>Google document connection</h3><p class="small">Connect your own Google account to search Gmail and Drive. This is separate from White Board sign-in. Google may require OAuth consent-screen configuration before access works.</p><div class="row"><button id="connectDocuments" type="button">${googleAccessToken&&Date.now()<googleTokenExpiry?'Reconnect Google documents':'Connect Gmail and Drive'}</button><span id="documentConnection" class="small">${googleAccessToken&&Date.now()<googleTokenExpiry?'Google document access authorized for this session':(documentAuthMessage||'Not connected')}</span></div><label>Shared Google Drive destination folder (paste its folder link)</label><input id="sharedFolder" value="${esc(localStorage.getItem('che-document-folder')||'')}" placeholder="https://drive.google.com/drive/folders/…"><div class="row"><button type="button" id="saveSharedFolder">Save folder</button><span class="small">Gmail attachments will be copied here. The folder must permit you to add files and Kaedi to open them.</span></div><label>Associate imported document with project</label><select id="importProject"><option value="">Unassigned</option>${state.projects.map(p=>`<option value="${esc(p.id)}" ${p.id==='p-chama'?'selected':''}>${esc(p.name)}</option>`).join('')}</select></div>`}
 function wireDocumentControls(){if(!$('connectDocuments'))return;$('connectDocuments').onclick=()=>authorizeDocuments().catch(e=>{const status=$('documentConnection');if(status)status.textContent='Not connected — '+e.message;alert('Google authorization: '+e.message)});$('saveSharedFolder').onclick=()=>{let v=$('sharedFolder').value.trim();if(v&&!/^(https:\/\/drive\.google\.com\/drive\/folders\/[\w-]+(?:[?/#].*)?|[\w-]{15,})$/.test(v))return alert('Paste the Google Drive folder link, not a document link.');localStorage.setItem('che-document-folder',v);alert('Destination folder saved in this browser.')};}
-// Google Identity Services token client: no manually constructed redirect URI.
-// Access tokens are kept only in memory and expire automatically.
+// Redirect authorization avoids the popup-to-parent messaging failure. The OAuth
+// response is a URL fragment, which is removed immediately and never sent to Firestore.
+const DOC_OAUTH_PENDING='che-doc-oauth-pending-v1';
 const DOC_OAUTH_TOKEN='che-doc-oauth-token-v1';
+const DOC_OAUTH_RETURN='che-doc-oauth-return-v1';
 let documentAuthMessage='';
-function setDocumentAuthStatus(message){
- documentAuthMessage=message;
- const status=$('documentConnection');if(status)status.textContent=message;
-}
+function documentRedirectUri(){return location.origin+location.pathname}
 function authorizeDocuments(){
  if(!googleUser)return Promise.reject(Error('Sign into the White Board first.'));
- if(!window.google?.accounts?.oauth2?.initTokenClient)return Promise.reject(Error('Google authorization library is still loading. Refresh and try again.'));
- return new Promise((resolve,reject)=>{
-  setDocumentAuthStatus('Waiting for Google authorization…');
-  try{
-   // Initialize for this click, so callback and errors belong to this request.
-   googleTokenClient=google.accounts.oauth2.initTokenClient({
-    client_id:GOOGLE_CLIENT_ID,
-    scope:DOC_SCOPES,
-    include_granted_scopes:true,
-    callback:(response)=>{
-     if(response?.error){const message=response.error_description||response.error;setDocumentAuthStatus('Not connected — '+message);reject(Error(message));return}
-     if(!response?.access_token){setDocumentAuthStatus('Not connected — Google returned no access token.');reject(Error('Google returned no access token.'));return}
-     googleAccessToken=response.access_token;
-     googleTokenExpiry=Date.now()+Math.max(60,Number(response.expires_in||3600)-60)*1000;
-     setDocumentAuthStatus('Google document access authorized for this session');
-     resolve(response);
-    },
-    error_callback:(error)=>{
-     const message=error?.message||error?.type||'Google authorization popup failed';
-     setDocumentAuthStatus('Not connected — '+message);
-     reject(Error(message));
-    }
-   });
-   googleTokenClient.requestAccessToken({prompt:'consent'});
-  }catch(error){setDocumentAuthStatus('Not connected — '+error.message);reject(error)}
- });
+ const nonce=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>b.toString(16).padStart(2,'0')).join('');
+ try{
+  sessionStorage.setItem(DOC_OAUTH_PENDING,JSON.stringify({nonce,created:Date.now()}));
+  sessionStorage.setItem(DOC_OAUTH_RETURN,location.hash.startsWith('#task/')?location.hash:location.hash||'#home');
+ }catch(e){return Promise.reject(Error('Browser session storage is unavailable: '+e.message))}
+ const params=new URLSearchParams({client_id:GOOGLE_CLIENT_ID,redirect_uri:documentRedirectUri(),response_type:'token',scope:DOC_SCOPES,state:nonce,include_granted_scopes:'true',prompt:'consent'});
+ location.assign('https://accounts.google.com/o/oauth2/v2/auth?'+params.toString());
+ return new Promise(()=>{});
+}
+function recoverDocumentAuthorization(){
+ // Called before the app's hash router starts, since OAuth uses the same fragment.
+ const fragment=location.hash.slice(1);
+ if(!/(?:^|&)(?:access_token|error|state)=/.test(fragment)){
+  try{const stored=JSON.parse(sessionStorage.getItem(DOC_OAUTH_TOKEN)||'null');if(stored?.token&&stored.expiry>Date.now()){googleAccessToken=stored.token;googleTokenExpiry=stored.expiry}}catch{}
+  return;
+ }
+ const p=new URLSearchParams(fragment),raw=sessionStorage.getItem(DOC_OAUTH_PENDING);
+ const returnHash=sessionStorage.getItem(DOC_OAUTH_RETURN)||'#home';
+ // Remove credentials from the address bar before displaying or logging anything.
+ history.replaceState(null,'',documentRedirectUri()+(returnHash.startsWith('#')?returnHash:'#home'));
+ sessionStorage.removeItem(DOC_OAUTH_PENDING);sessionStorage.removeItem(DOC_OAUTH_RETURN);
+ try{
+  const pending=JSON.parse(raw||'null');
+  if(!pending||Date.now()-pending.created>10*60*1000||pending.nonce!==p.get('state'))throw Error('Google authorization state could not be verified. Please reconnect.');
+  if(p.get('error'))throw Error(p.get('error_description')||p.get('error'));
+  const token=p.get('access_token');if(!token||p.get('token_type')?.toLowerCase()!=='bearer')throw Error('Google did not return a usable access token.');
+  googleAccessToken=token;googleTokenExpiry=Date.now()+Math.max(60,Number(p.get('expires_in')||3600)-60)*1000;
+  sessionStorage.setItem(DOC_OAUTH_TOKEN,JSON.stringify({token,expiry:googleTokenExpiry}));
+  documentAuthMessage='Connected for this session';
+ }catch(e){documentAuthMessage='Not connected — '+e.message;console.error('Google document redirect authorization failed:',e.message)}
 }
 async function accessToken(){if(googleAccessToken&&Date.now()<googleTokenExpiry)return googleAccessToken;throw Error('Connect Gmail and Drive above, then search again.')}
 async function googleApi(url,options={}){const token=await accessToken();let r=await fetch(url,{...options,headers:{Authorization:'Bearer '+token,...(options.headers||{})}});if(!r.ok){let body=await r.json().catch(()=>({}));throw Error((body.error?.message||r.statusText)+' (HTTP '+r.status+')')}return r.status===204?{}:r.json()}
@@ -221,9 +224,9 @@ function setupGoogleIdentity(){
  if(!window.google?.accounts?.id){setTimeout(setupGoogleIdentity,350);return}
  google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:onGoogleCredential,auto_select:false});
  google.accounts.id.renderButton($('googleSignIn'),{theme:'outline',size:'medium',text:'signin_with'});
- $('googleSignOut').onclick=async()=>{if(cloudUnsubscribe){clearInterval(cloudUnsubscribe);cloudUnsubscribe=null}cloudReady=false;cloudNoAction();google.accounts.id.disableAutoSelect();if(firebaseAuth&&firebaseSignOut)await firebaseSignOut(firebaseAuth);googleUser=null;googleAccessToken='';googleTokenExpiry=0;firebaseStatus('Firebase: signed out.');updateGoogleHeader();render()};
+ $('googleSignOut').onclick=async()=>{if(cloudUnsubscribe){clearInterval(cloudUnsubscribe);cloudUnsubscribe=null}cloudReady=false;cloudNoAction();google.accounts.id.disableAutoSelect();if(firebaseAuth&&firebaseSignOut)await firebaseSignOut(firebaseAuth);googleUser=null;googleAccessToken='';googleTokenExpiry=0;sessionStorage.removeItem(DOC_OAUTH_TOKEN);firebaseStatus('Firebase: signed out.');updateGoogleHeader();render()};
  updateGoogleHeader();
 }
 
-try{state=JSON.parse(localStorage.getItem(KEY))||structuredClone(seed)}catch{state=structuredClone(seed)}state.projects??=[];state.tasks??=[];state.docs??=[];state.contacts??=[];state.author??='';openDB().then(x=>db=x).catch(()=>{});window.addEventListener('hashchange',render);render();updateGoogleHeader();initFirebase().then(setupGoogleIdentity);
+try{state=JSON.parse(localStorage.getItem(KEY))||structuredClone(seed)}catch{state=structuredClone(seed)}state.projects??=[];state.tasks??=[];state.docs??=[];state.contacts??=[];state.author??='';openDB().then(x=>db=x).catch(()=>{});recoverDocumentAuthorization();window.addEventListener('hashchange',render);render();updateGoogleHeader();initFirebase().then(setupGoogleIdentity);
 </script></body></html>
